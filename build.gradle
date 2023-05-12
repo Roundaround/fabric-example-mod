@@ -92,6 +92,9 @@ remapJar {
 }
 
 shadowJar {
+	dependsOn remapJar
+	from tasks.remapJar.outputs.files
+
 	configurations = [project.configurations.remapRoundaLibShade]
 	relocate "me.roundaround.roundalib", "${groupId}.${modId}.roundalib"
 	exclude "**/assets/roundalib/**"
