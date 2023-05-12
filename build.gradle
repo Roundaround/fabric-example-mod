@@ -4,6 +4,8 @@ plugins {
 	id 'maven-publish'
 }
 
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 version = project.mod_version
 group = project.maven_group
 
@@ -12,16 +14,7 @@ def modId = project.archives_base_name
 def modVersion = project.mod_version
 def fullVersion = "${modVersion}-${project.minecraft_version}"
 
-loom {
-	addRemapConfiguration("remapRoundaLibShade", {
-		targetConfigurationName = "roundaLibShade"
-		sourceSet = sourceSets.main
-		onCompileClasspath = true
-		onRuntimeClasspath = true
-	})
-}
-
-configurations.remapRoundaLibShade {
+configurations.create("roundaLibShade") {
 	transitive = false
 }
 
@@ -46,7 +39,7 @@ dependencies {
 	modImplementation "com.terraformersmc:modmenu:${project.mod_menu_version}"
 
 	modImplementation "me.roundaround:roundalib:${project.roundalib_version}"
-	remapRoundaLibShade "me.roundaround:roundalib:${project.roundalib_version}"
+	roundaLibShade "me.roundaround:roundalib:${project.roundalib_version}"
 }
 
 base {
@@ -85,17 +78,11 @@ jar {
 /**
  * Custom stuff here
  */
-remapJar {
-	archiveBaseName.set(modId)
-	archiveVersion.set(fullVersion)
-	archiveClassifier.set("remapped")
-}
-
-shadowJar {
+tasks.register('roundaLibShadowJar', ShadowJar) {
 	dependsOn remapJar
 	from tasks.remapJar.outputs.files
 
-	configurations = [project.configurations.remapRoundaLibShade]
+	configurations = [project.configurations.roundaLibShade]
 	relocate "me.roundaround.roundalib", "${groupId}.${modId}.roundalib"
 	exclude "**/assets/roundalib/**"
 	exclude "**/roundalib-refmap.json"
@@ -106,8 +93,12 @@ shadowJar {
 	archiveClassifier.set("")
 }
 
-build {
-	dependsOn shadowJar
+remapJar {
+	archiveBaseName.set(modId)
+	archiveVersion.set(fullVersion)
+	archiveClassifier.set("remapped")
+
+	finalizedBy tasks.named("roundaLibShadowJar")
 }
 /**
  * End custom stuff
